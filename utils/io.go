@@ -3,7 +3,16 @@ package utils
 import (
 	"bufio"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 )
+
+func WriteProtoMsgToWriter(w *bufio.Writer, message proto.Message) error {
+	marshal, err := proto.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("数据序列化失败: %s", err.Error())
+	}
+	return WriteBytesToWriter(w, marshal)
+}
 
 func WriteBytesToWriter(w *bufio.Writer, data []byte) error {
 	dataLen := int64(len(data))
@@ -25,6 +34,18 @@ func WriteBytesToWriter(w *bufio.Writer, data []byte) error {
 	}
 
 	return nil
+}
+
+func ReadProtoMsgByReader(r *bufio.Reader, res proto.Message) error {
+	b, err := ReadBytesByReader(r)
+	if err != nil {
+		return err
+	}
+
+	if err = proto.Unmarshal(b, res); err != nil {
+		return fmt.Errorf("反序列化数据内容失败: %s", err)
+	}
+	return err
 }
 
 func ReadBytesByReader(r *bufio.Reader) ([]byte, error) {
