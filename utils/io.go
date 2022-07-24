@@ -5,18 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/teamManagement/common/errors"
 )
 
-type Error struct {
-	Code string
-	Msg  string
-}
-
-func (e *Error) Error() string {
-	return e.Msg
-}
-
-func WriteErrToWriter(w *bufio.Writer, err *Error) error {
+func WriteErrToWriter(w *bufio.Writer, err *errors.Error) error {
 	marshal, e := json.Marshal(err)
 	if e != nil {
 		return fmt.Errorf("序列化错误信息失败: %s", e.Error())
@@ -71,7 +63,7 @@ func ReadProtoMsgByReader(r *bufio.Reader, res proto.Message) error {
 	}
 
 	if !success {
-		var errRes *Error
+		var errRes *errors.Error
 		if err = json.Unmarshal(b, &errRes); err != nil {
 			return fmt.Errorf("转换对端错误信息失败: %s", err.Error())
 		}
