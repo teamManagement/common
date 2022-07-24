@@ -76,6 +76,8 @@ func UnmarshalJson(data []byte) (*Error, error) {
 }
 
 const (
+	// ErrCodeUnknown 未定义的异常
+	ErrCodeUnknown ErrCode = iota + 1
 	// ErrCodeCmdNotFound 命令未识别
-	ErrCodeCmdNotFound ErrCode = iota + 1
+	ErrCodeCmdNotFound
 )
