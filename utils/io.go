@@ -25,6 +25,14 @@ func WriteProtoMsgToWriter(w *bufio.Writer, message proto.Message) error {
 	return WriteBytesToWriter(w, marshal, true)
 }
 
+func WriteJsonMsgToWriter(w *bufio.Writer, data any) error {
+	marshal, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("数据序列化失败: %s", err.Error())
+	}
+	return WriteBytesToWriter(w, marshal, true)
+}
+
 func WriteBytesToWriter(w *bufio.Writer, data []byte, success bool) error {
 	dataLen := int64(len(data) + 1)
 	lenBytes, err := IntToBytes(dataLen)
@@ -71,6 +79,26 @@ func ReadProtoMsgByReader(r *bufio.Reader, res proto.Message) error {
 	}
 
 	if err = proto.Unmarshal(b, res); err != nil {
+		return fmt.Errorf("反序列化数据内容失败: %s", err)
+	}
+	return err
+}
+
+func ReadJsonMsgByReader(r *bufio.Reader, data any) error {
+	b, success, err := ReadBytesByReader(r)
+	if err != nil {
+		return err
+	}
+
+	if !success {
+		var errRes *errors.Error
+		if err = json.Unmarshal(b, &errRes); err != nil {
+			return fmt.Errorf("转换对端错误信息失败: %s", err.Error())
+		}
+		return errRes
+	}
+
+	if err = json.Unmarshal(b, data); err != nil {
 		return fmt.Errorf("反序列化数据内容失败: %s", err)
 	}
 	return err
