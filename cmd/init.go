@@ -271,9 +271,9 @@ func (c Name) Registry(handle Handler) {
 
 const (
 	// Login 登录
-	Login = "/login"
+	Login Name = "/login"
 	// Registry 注册
-	Registry = "/registry"
+	Registry Name = "/registry"
 	// Forgot 忘记密码
-	Forgot = "/forgot"
+	Forgot Name = "/forgot"
 )
