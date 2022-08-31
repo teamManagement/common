@@ -5,9 +5,9 @@ import (
 	"fmt"
 	transportstream "github.com/go-base-lib/transport-stream"
 	"github.com/gogo/protobuf/proto"
+	"github.com/lucas-clemente/quic-go"
 	"github.com/teamManagement/common/errors"
 	"io"
-	"net"
 	"strings"
 )
 
@@ -60,11 +60,11 @@ func NewExchangeDataByProtoMust(data proto.Message) ExchangeData {
 	return marshal
 }
 
-type Handler func(stream *transportstream.Stream, conn net.Conn) (ExchangeData, error)
+type Handler func(stream *transportstream.Stream, quicStream quic.Stream) (ExchangeData, error)
 
 var cmdMap = map[Name]Handler{}
 
-func Route(stream *transportstream.Stream, conn net.Conn) error {
+func Route(stream *transportstream.Stream, quicStream quic.Stream) error {
 	sendEndOk := false
 	defer func() {
 		if sendEndOk {
@@ -108,7 +108,7 @@ func Route(stream *transportstream.Stream, conn net.Conn) error {
 		return err
 	}
 
-	if nextData, err := cmdHandle(stream, conn); err != nil {
+	if nextData, err := cmdHandle(stream, quicStream); err != nil {
 		if err == transportstream.StreamIsEnd {
 			return nil
 		}
