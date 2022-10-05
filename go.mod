@@ -3,17 +3,19 @@ module github.com/teamManagement/common
 go 1.18
 
 require (
+	github.com/go-base-lib/goextension v0.0.0-20221003104525-59fbe063e6ad
+	github.com/go-base-lib/transport-stream v0.0.0-20220817085119-03136fb70ffd
 	github.com/gogo/protobuf v1.3.2
+	github.com/lucas-clemente/quic-go v0.29.0
 	github.com/stretchr/testify v1.8.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/go-base-lib/transport-stream v0.0.0-20220817085119-03136fb70ffd // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
-	github.com/lucas-clemente/quic-go v0.29.0 // indirect
+	github.com/kr/pretty v0.3.0 // indirect
 	github.com/marten-seemann/qtls-go1-18 v0.1.2 // indirect
 	github.com/marten-seemann/qtls-go1-19 v0.1.0 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
