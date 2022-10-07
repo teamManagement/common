@@ -76,7 +76,8 @@ func (w *Wrapper) WriteErrMessage(msg string) *Wrapper {
 }
 
 func (w *Wrapper) WriteErrMessageWithCode(errCode uint, msg string) *Wrapper {
-	return w.WriteFormatJsonData(NewErrorMessageInfoWithCode(errCode, msg))
+	marshal, _ := json.Marshal(NewErrorMessageInfoWithCode(errCode, msg))
+	return w.writeBytes(marshal)
 }
 
 func (w *Wrapper) WriteFormatJsonData(data any) *Wrapper {
