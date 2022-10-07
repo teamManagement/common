@@ -34,7 +34,8 @@ func NewErrorMessageInfoWithCode(code uint, msg string) *MessageInfo {
 }
 
 type Wrapper struct {
-	rw *bufio.ReadWriter
+	rw  *bufio.ReadWriter
+	err error
 }
 
 func NewWrapper(conn net.Conn) *Wrapper {
@@ -43,47 +44,69 @@ func NewWrapper(conn net.Conn) *Wrapper {
 	}
 }
 
-func (w *Wrapper) WriteByte(b byte) error {
-	if err := w.rw.WriteByte(b); err != nil {
-		return err
-	}
-
-	return w.rw.Flush()
+func (w *Wrapper) Error() error {
+	err := w.err
+	w.err = nil
+	return err
 }
 
-func (w *Wrapper) WriteErrMessage(msg string) error {
+func (w *Wrapper) wrapperError(fn func() error) *Wrapper {
+	if w.err != nil {
+		return w
+	}
+
+	w.err = fn()
+	return w
+}
+
+func (w *Wrapper) WriteByte(b byte) *Wrapper {
+	return w.wrapperError(func() error {
+		if err := w.rw.WriteByte(b); err != nil {
+			return err
+		}
+		return w.rw.Flush()
+	})
+}
+
+func (w *Wrapper) WriteErrMessage(msg string) *Wrapper {
 	return w.writeErrMessageWithCode(0, msg)
 }
 
-func (w *Wrapper) writeErrMessageWithCode(errCode uint, msg string) error {
+func (w *Wrapper) writeErrMessageWithCode(errCode uint, msg string) *Wrapper {
 	return w.WriteFormatJsonData(NewErrorMessageInfoWithCode(errCode, msg))
 }
 
-func (w *Wrapper) WriteFormatJsonData(data any) error {
+func (w *Wrapper) WriteFormatJsonData(data any) *Wrapper {
+	if w.err != nil {
+		return w
+	}
 	marshal, err := json.Marshal(data)
 	if err != nil {
-		return err
+		w.err = err
+		return w
 	}
 
 	return w.WriteFormatBytesData(marshal)
 }
 
-func (w *Wrapper) WriteFormatBytesData(data []byte) error {
-	dataLen := len(data)
-	lenBytes, err := transportstream.IntToBytes[int64](int64(dataLen))
-	if err != nil {
-		return err
-	}
+func (w *Wrapper) WriteFormatBytesData(data []byte) *Wrapper {
+	return w.wrapperError(func() error {
+		dataLen := len(data)
+		lenBytes, err := transportstream.IntToBytes[int64](int64(dataLen))
+		if err != nil {
+			return err
+		}
 
-	if _, err = w.rw.Write(lenBytes); err != nil {
-		return err
-	}
+		if _, err = w.rw.Write(lenBytes); err != nil {
+			return err
+		}
 
-	if _, err = w.rw.Write(data); err != nil {
-		return err
-	}
+		if _, err = w.rw.Write(data); err != nil {
+			return err
+		}
 
-	return w.rw.Flush()
+		return w.rw.Flush()
+	})
 }
 
 func (w *Wrapper) ReadeFormatBytesData() (goextension.Bytes, error) {
