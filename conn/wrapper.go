@@ -43,6 +43,14 @@ func NewWrapper(conn net.Conn) *Wrapper {
 	}
 }
 
+func (w *Wrapper) WriteByte(b byte) error {
+	if err := w.rw.WriteByte(b); err != nil {
+		return err
+	}
+
+	return w.rw.Flush()
+}
+
 func (w *Wrapper) WriteErrMessage(msg string) error {
 	return w.writeErrMessageWithCode(0, msg)
 }
@@ -110,4 +118,8 @@ func (w *Wrapper) ReadFormatJsonData(res any) error {
 		return err
 	}
 	return json.Unmarshal(dataBytes, &res)
+}
+
+func (w *Wrapper) ReadByte() (byte, error) {
+	return w.rw.ReadByte()
 }
