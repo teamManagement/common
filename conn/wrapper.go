@@ -3,6 +3,8 @@ package conn
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/go-base-lib/goextension"
 	transportstream "github.com/go-base-lib/transport-stream"
 	"net"
@@ -12,6 +14,7 @@ type MessageType uint
 
 const (
 	MessageTypeError MessageType = iota
+	MessageTypeSuccess
 )
 
 type MessageInfo struct {
@@ -69,10 +72,10 @@ func (w *Wrapper) WriteByte(b byte) *Wrapper {
 }
 
 func (w *Wrapper) WriteErrMessage(msg string) *Wrapper {
-	return w.writeErrMessageWithCode(0, msg)
+	return w.WriteErrMessageWithCode(0, msg)
 }
 
-func (w *Wrapper) writeErrMessageWithCode(errCode uint, msg string) *Wrapper {
+func (w *Wrapper) WriteErrMessageWithCode(errCode uint, msg string) *Wrapper {
 	return w.WriteFormatJsonData(NewErrorMessageInfoWithCode(errCode, msg))
 }
 
@@ -90,7 +93,17 @@ func (w *Wrapper) WriteFormatJsonData(data any) *Wrapper {
 }
 
 func (w *Wrapper) WriteFormatBytesData(data []byte) *Wrapper {
+	marshal, _ := json.Marshal(&MessageInfo{
+		Type: MessageTypeSuccess,
+		Data: data,
+	})
+
+	return w.writeBytes(marshal)
+}
+
+func (w *Wrapper) writeBytes(data []byte) *Wrapper {
 	return w.wrapperError(func() error {
+
 		dataLen := len(data)
 		lenBytes, err := transportstream.IntToBytes[int64](int64(dataLen))
 		if err != nil {
@@ -104,7 +117,6 @@ func (w *Wrapper) WriteFormatBytesData(data []byte) *Wrapper {
 		if _, err = w.rw.Write(data); err != nil {
 			return err
 		}
-
 		return w.rw.Flush()
 	})
 }
@@ -120,7 +132,21 @@ func (w *Wrapper) ReadeFormatBytesData() (goextension.Bytes, error) {
 		return nil, err
 	}
 
-	return w.ReadeCountBytes(dataLen)
+	wrapperBytes, err := w.ReadeCountBytes(dataLen)
+	if err != nil {
+		return nil, err
+	}
+
+	var messageInfo *MessageInfo
+	if err = json.Unmarshal(wrapperBytes, &messageInfo); err != nil {
+		return nil, fmt.Errorf("数据格式解析失败: %s", err.Error())
+	}
+
+	if messageInfo.Type == MessageTypeSuccess {
+		return messageInfo.Data, nil
+	}
+
+	return nil, errors.New(messageInfo.Message)
 }
 
 func (w *Wrapper) ReadeCountBytes(count int64) (goextension.Bytes, error) {
@@ -140,6 +166,7 @@ func (w *Wrapper) ReadFormatJsonData(res any) error {
 	if err != nil {
 		return err
 	}
+
 	return json.Unmarshal(dataBytes, &res)
 }
 
